@@ -1,10 +1,11 @@
-import api from "../api";
+import { api } from "../api";
 
-const getFilmes = async (page: number) => {
+const getFilmes = async ({ page }: { page: number }) => {
     try {
+        
         const { data } = await api.get("/movie/top_rated", {
             params: {
-                language: "en-US",
+                language: "pt-BR",
                 page: page
             }
         });
@@ -18,7 +19,7 @@ const getFilme = async (page: number, id: string) => {
     try {
         const { data } = await api.get(`/movie/${id}`, {
             params: {
-                language: "en-US",
+                language: "pt-BR",
                 page: page
             }
         });
