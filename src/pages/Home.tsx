@@ -1,68 +1,61 @@
-import { useEffect, useState } from "react";
-import { getFilmes } from "../services/movies";
 import { Movie } from "../components/ui/Movie";
 import { useInView } from "react-intersection-observer";
+import type { MovieProps } from "../types/movie";
+import { Input } from "antd";
+import { SearchOutlined } from "@ant-design/icons";
+import { useMovies } from "../hooks/useMovies";
 
 export default function Home() {
+  const { ref, inView } = useInView({ threshold: 0.5 });
+  const {
+    filmes,
+    isLoading,
+    error,
+    hasMore,
+    searchQuery,
+    setSearchQuery,
+    handleSearch,
+  } = useMovies(inView);
 
-    const [ filmes, setFilmes ] = useState<any[]>([]);
-    const [ page, setPage ] = useState(1);
-    const [ isLoading, setIsLoading ] = useState(false);
-    const [ hasMore, setHasMore ] = useState(true);
-    const { ref, inView } = useInView({ threshold: 0.5 });
+  return (
+    <div className="w-full p-4">
+      <div className="max-w-md mx-auto mb-8">
+        <Input
+          placeholder="Buscar filmes..."
+          prefix={<SearchOutlined className="text-gray-400" />}
+          allowClear
+          size="large"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onPressEnter={(e) => handleSearch(e.currentTarget.value)}
+          onClear={() => handleSearch("")}
+          className="rounded-full shadow-sm"
+        />
+      </div>
 
-    const fetchFilmes = async (currentPage: number) => {
-        try {
-            setIsLoading(true);
-            const data = await getFilmes({ page: currentPage });
-            
-            if (data && data.results) {
-                if (currentPage === 1) {
-                    setFilmes(data.results);
-                } else {
-                    setFilmes((prevFilmes) => [...prevFilmes, ...data.results]);
-                }
-                
-                if (data.page >= data.total_pages || data.results.length === 0) {
-                    setHasMore(false);
-                }
-            }
-        } catch (error) {
-            console.error("Erro ao carregar filmes:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    }
+      <div className="flex flex-wrap gap-8 w-full align-items-center justify-center">
+        {error && (
+          <div className="w-full text-center p-4 bg-red-100 text-red-700 rounded-lg">
+            {error}
+          </div>
+        )}
 
-    useEffect(() => {
-        fetchFilmes(1);
-    }, []);
-
-    useEffect(() => {
-        if (inView && !isLoading && hasMore) {
-            const nextPage = page + 1;
-            setPage(nextPage);
-            fetchFilmes(nextPage);
-        }
-    }, [inView, isLoading, hasMore, page]);
-
-    return (
-        <>
-            {filmes && filmes.length > 0 && (
-                <>
-                    {filmes.map((filme: any) => (
-                        <Movie key={filme.id} filme={filme} />
-                    ))}
-                    {hasMore && (
-                        <div ref={ref} style={{ height: '20px', margin: '20px 0' }}>
-                            {isLoading && <p>Carregando mais filmes...</p>}
-                        </div>
-                    )}
-                </>
+        {filmes && filmes.length > 0 && (
+          <>
+            {filmes.map((filme: MovieProps) => (
+              <Movie key={filme.id} filme={filme} />
+            ))}
+            {hasMore && (
+              <div ref={ref} style={{ height: "20px", margin: "20px 0" }}>
+                {isLoading && <p>Carregando mais filmes...</p>}
+              </div>
             )}
-            {filmes.length === 0 && !isLoading && (
-                <p>Nenhum filme encontrado.</p>
-            )}
-        </>
-    );
+          </>
+        )}
+        {filmes.length === 0 && !isLoading && !error && (
+          <p>Nenhum filme encontrado.</p>
+        )}
+      </div>
+    </div>
+  );
 }
